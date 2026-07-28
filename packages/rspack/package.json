@@ -27,6 +27,7 @@
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "rslib build",
     "dev": "rslib build --watch",
