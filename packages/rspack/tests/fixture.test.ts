@@ -31,4 +31,32 @@ describe('golar against the playground fixture', () => {
     expect(summary).toContain('App.vue')
     expect(summary).toContain('explicit-anys')
   })
+
+  it('reports the SFC type error even when the host forces colour', async () => {
+    // What CI does: rstest hands its workers FORCE_COLOR=1, golar inherits it,
+    // and its type checker switches to a layout the parser used to skip, so
+    // every type error vanished while lint findings came through untouched.
+    const previous = process.env.FORCE_COLOR
+    process.env.FORCE_COLOR = '1'
+
+    try {
+      const options = resolveGolarOptions({ cwd: fixture }, { cwd: fixture, watch: false })
+      const result = await runGolar(options)
+
+      const summary = [
+        `exitCode: ${result.exitCode}`,
+        `issues: ${JSON.stringify(result.issues, null, 2)}`,
+        `raw output:\n${result.output}`,
+      ].join('\n')
+
+      expect(summary).toContain('TS2322')
+      expect(result.issues.some(issue => issue.origin === 'typecheck')).toBe(true)
+    }
+    finally {
+      if (previous == null)
+        delete process.env.FORCE_COLOR
+      else
+        process.env.FORCE_COLOR = previous
+    }
+  })
 })

@@ -8,6 +8,17 @@ import type { ResolvedGolarOptions } from './options.js'
 import { findGolarConfig, getGolarArgs } from './options.js'
 import { parseGolarOutput, stripAnsi } from './parse.js'
 
+// golar's diagnostics are parsed, not shown, and colour changes their layout:
+// with it on, the type checker switches to tsc's `--pretty` form, where a
+// diagnostic reads `file:line:col - error TS1234:` instead of
+// `file(line,col): error TS1234:`. Test runners and CI providers set
+// FORCE_COLOR on the processes they spawn, so the format has to be pinned here
+// rather than left to whatever the host decided.
+const PLAIN_OUTPUT_ENV = {
+  FORCE_COLOR: '0',
+  NO_COLOR: '1',
+}
+
 export class GolarAbortError extends Error {
   constructor() {
     super('golar run aborted')
@@ -113,7 +124,9 @@ export async function runGolar(
     const child = spawn(command, args, {
       cwd: options.cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: options.env ? { ...process.env, ...options.env } : process.env,
+      // A caller who sets these explicitly gets what they asked for, including
+      // colour, which the parser then has to cope with.
+      env: { ...process.env, ...PLAIN_OUTPUT_ENV, ...options.env },
     })
 
     const cleanup = () => {

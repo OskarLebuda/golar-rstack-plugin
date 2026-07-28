@@ -9,6 +9,15 @@ const ANSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g
 //   src/App.vue(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
 const TYPECHECK_PATTERN = /^(.+?)\((\d+),(\d+)\): (error|warning|message) (TS\d+): (.*)$/
 
+// With colour enabled the type checker switches to tsc's `--pretty` layout,
+// which separates the position with a dash and follows the message with a
+// source frame:
+//   src/App.vue:2:7 - error TS2322: Type 'string' is not assignable to type 'number'.
+// The runner pins colour off, so this only comes up when a caller overrides the
+// environment, but a diagnostic silently dropped for looking different is the
+// worst way to find that out.
+const TYPECHECK_PRETTY_PATTERN = /^(.+?):(\d+):(\d+) - (error|warning|message) (TS\d+): (.*)$/
+
 // Lint diagnostics use an unrelated layout: colon separated, rule name in place
 // of the TS code, and no severity word:
 //   src/lintme.ts:1:22: explicit-anys: Unexpected any. Specify a different type.
@@ -95,6 +104,23 @@ export function parseGolarOutput(output: string, options: ParseOptions): Issue[]
         location: { line: Number(lineNo), column: Number(column) },
       }
       issues.push(current)
+      continue
+    }
+
+    const pretty = TYPECHECK_PRETTY_PATTERN.exec(line)
+    if (pretty) {
+      const [, file, lineNo, column, severity, code, message] = pretty
+      issues.push({
+        severity: severity === 'message' ? 'warning' : typecheckSeverity,
+        code: code!,
+        message: message!,
+        origin: 'typecheck',
+        file: resolveFile(cwd, file!),
+        location: { line: Number(lineNo), column: Number(column) },
+      })
+      // What follows a pretty diagnostic is its source frame, not an
+      // elaboration, so nothing here accepts continuation lines.
+      current = undefined
       continue
     }
 

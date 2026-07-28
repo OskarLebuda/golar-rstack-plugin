@@ -31,6 +31,35 @@ describe('parseGolarOutput', () => {
     expect(issues[1]?.code).toBe('TS2345')
   })
 
+  it('parses the pretty typecheck layout golar emits when colour is on', () => {
+    // Verbatim from a run with FORCE_COLOR set, ANSI codes aside: a dash before
+    // the severity, then a blank line, the source frame and a summary.
+    const output = [
+      'Using config from ./golar.config.ts...',
+      'src/math.ts:6:33: explicit-anys: Unexpected any. Specify a different type.',
+      'src/App.vue:8:7 - error TS2322: Type \'number\' is not assignable to type \'string\'.',
+      '',
+      '8 const label: string = double(count.value)',
+      '        ~~~~~',
+      '',
+      'Found 1 error in src/App.vue:8',
+    ].join('\n')
+
+    const issues = parseGolarOutput(output, options)
+
+    expect(issues).toHaveLength(2)
+    expect(issues[1]).toEqual({
+      severity: 'error',
+      code: 'TS2322',
+      message: 'Type \'number\' is not assignable to type \'string\'.',
+      origin: 'typecheck',
+      file: path.resolve(cwd, 'src/App.vue'),
+      location: { line: 8, column: 7 },
+    })
+    // The frame under the diagnostic is decoration, not an elaboration.
+    expect(issues[1]?.message).not.toContain('~~~~~')
+  })
+
   it('folds indented elaborations into the preceding message', () => {
     const output = [
       'src/multiline.ts(6,7): error TS2322: Type \'number[]\' is not assignable to type \'string[]\'.',
