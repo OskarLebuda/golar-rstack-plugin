@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # golar requires >=22.12, and so do these packages.
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      # Build first: typed linting resolves cross-package imports through the
+      # generated declarations in each package's dist/.
+      - run: pnpm build
+      # Lint and type check in one pass.
+      - run: pnpm lint
+      # Spawns the real golar binary against the playground, so this also
+      # covers the diagnostic parsing end to end.
+      - run: pnpm test
+
+      # Validates the published manifests: that every path in exports/files
+      # exists in the tarball and that types resolve. The tests cannot see
+      # this, because inside the workspace pnpm resolves through symlinks.
+      - run: pnpm check:publish
+
+  # golar ships no machine-readable reporter, so the parser is pinned to the
+  # human output of a known version. This job fails first when a golar release
+  # changes that format, rather than leaving users to discover it.
+  canary:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --no-frozen-lockfile
+      - name: Upgrade to the latest golar
+        run: |
+          pnpm --filter playground-rsbuild-vue add -D \
+            golar@latest \
+            @golar/vue@latest
+      - run: pnpm build
+      - run: pnpm test
