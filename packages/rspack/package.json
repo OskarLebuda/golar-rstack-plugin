@@ -30,6 +30,7 @@
   "scripts": {
     "build": "rslib build",
     "dev": "rslib build --watch",
+    "test": "rstest run",
     "check:publish": "publint && attw --pack ."
   },
   "dependencies": {
@@ -50,6 +51,7 @@
   "devDependencies": {
     "@rslib/core": "^0.23.2",
     "@rspack/core": "^2.1.5",
+    "@rstest/core": "^0.11.4",
     "@types/node": "^24.13.3",
     "typescript": "^6.0.3"
   },
