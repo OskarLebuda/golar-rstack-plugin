@@ -147,6 +147,12 @@ export class GolarRspackPlugin {
           try {
             const result = await runGolar(options, abortController.signal)
             logger.debug(`golar iteration ${iteration} found ${result.issues.length} issue(s).`)
+            // golar has no structured reporter, so its raw output is the only
+            // way to tell a clean check apart from one whose diagnostics never
+            // made it through the parser.
+            logger.debug(
+              `golar iteration ${iteration} exited with ${result.exitCode} and wrote:\n${result.output}`,
+            )
             return result.issues
           }
           catch (error) {

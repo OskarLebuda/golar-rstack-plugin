@@ -67,19 +67,23 @@ async function probeGolar(): Promise<string> {
 }
 
 /**
- * Appends golar's own view of the fixture to a report that came out wrong.
+ * Asserts that a compilation received the type error golar found in the SFC.
  *
- * Only runs when the report is already going to fail an assertion, so passing
- * runs are not charged a second golar start.
+ * The probe is attached to the failure rather than to the text being matched:
+ * concatenating it would let a working golar satisfy an assertion the plugin
+ * failed, turning a broken run green.
  *
  * @param report The report built from a compilation.
- * @returns The report, with the probe appended when the type error is missing.
+ * @throws If the type error is missing, with golar's own view of the fixture
+ * attached.
  */
-async function explain(report: string): Promise<string> {
-  if (report.includes('TS2322'))
-    return report
+async function expectSfcTypeError(report: string): Promise<void> {
+  if (report.includes('TS2322') && report.includes('App.vue'))
+    return
 
-  return `${report}\n\n${await probeGolar()}`
+  throw new Error(
+    `the plugin never reported the SFC type error.\n\n${report}\n\n${await probeGolar()}`,
+  )
 }
 
 describe('golarRspackPlugin', () => {
@@ -97,13 +101,12 @@ describe('golarRspackPlugin', () => {
       })
     })
 
-    const report = await explain([
+    const report = [
       `errors:\n${describeDiagnostics(stats.compilation.errors)}`,
       `warnings:\n${describeDiagnostics(stats.compilation.warnings)}`,
-    ].join('\n\n'))
+    ].join('\n\n')
 
-    expect(report).toContain('TS2322')
-    expect(report).toContain('App.vue')
+    await expectSfcTypeError(report)
     // Lint issues stay warnings by default: golar itself exits 0 for them.
     expect(report).toContain('explicit-anys')
 
@@ -141,12 +144,11 @@ describe('golarRspackPlugin', () => {
 
     // On a stall this reports every tap invocation, so the failure says what
     // the dev server actually received instead of just timing out.
-    const report = await explain(replayed
+    const report = replayed
       ? describeDiagnostics(replayed.compilation.errors)
-      : `tap never received errors. Invocations:\n${seen.join('\n==\n') || '(never called)'}`)
+      : `tap never received errors. Invocations:\n${seen.join('\n==\n') || '(never called)'}`
 
-    expect(report).toContain('TS2322')
-    expect(report).toContain('App.vue')
+    await expectSfcTypeError(report)
 
     await new Promise<void>(resolve => watching.close(() => resolve()))
   })
