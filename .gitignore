@@ -1,0 +1,6 @@
+node_modules
+dist
+lib
+.rslib
+*.log
+.DS_Store

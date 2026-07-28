@@ -1,0 +1,28 @@
+{
+  "name": "golar-rstack-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.28.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "pnpm --filter \"./packages/*\" -r run build",
+    "dev": "pnpm --filter \"./packages/*\" -r run dev",
+    "test": "pnpm --filter \"./packages/*\" -r run test",
+    "lint": "rslint",
+    "lint:fix": "rslint --fix",
+    "check:publish": "pnpm --filter \"./packages/*\" -r run check:publish",
+    "release": "bumpp"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@microsoft/api-extractor": "^7.58.12",
+    "@rslint/core": "^0.7.1",
+    "@types/node": "^24.13.3",
+    "bumpp": "^10.4.0",
+    "publint": "^0.3.22",
+    "typescript": "^6.0.3"
+  }
+}
