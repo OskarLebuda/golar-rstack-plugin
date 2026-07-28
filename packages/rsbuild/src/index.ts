@@ -16,9 +16,14 @@ export type {
  * Runs [golar](https://golar.dev) type checking and linting alongside the
  * Rsbuild compilation, in a separate process.
  *
- * In `dev` the check runs asynchronously so it never delays HMR; results land
- * in the terminal and the browser error overlay. In `build` the compilation
- * waits for golar, so type errors fail the build.
+ * While developing, the check runs asynchronously so it never delays HMR, and
+ * results land in the terminal and the browser error overlay. During a build
+ * the compilation waits for golar, so type errors fail the build.
+ *
+ * @param options Plugin options. `cwd` defaults to Rsbuild's `rootPath`, which
+ * is where `golar.config.*` normally lives. See the package README for the
+ * remaining defaults.
+ * @returns The Rsbuild plugin to add to your config.
  */
 export function pluginGolar(options: GolarRspackPluginOptions = {}): RsbuildPlugin {
   return {
@@ -30,7 +35,6 @@ export function pluginGolar(options: GolarRspackPluginOptions = {}): RsbuildPlug
         config.plugins.push(
           new GolarRspackPlugin({
             ...options,
-            // Rsbuild's root is the natural place to look for golar.config.*.
             cwd: options.cwd ?? api.context.rootPath,
           }),
         )

@@ -13,30 +13,33 @@ import { createPluginState } from './state.js'
 
 const PLUGIN_NAME = 'GolarRspackPlugin'
 
-/** Dev servers whose `done` tap can be replayed to refresh the error overlay. */
+// Dev servers whose `done` tap can be replayed to refresh the error overlay.
 const DEV_SERVER_TAPS = ['webpack-dev-server', 'rspack-dev-server', 'rsbuild-dev-server']
 
 export interface GolarRspackPluginOptions extends GolarOptions {
-  /**
-   * Push asynchronously-found issues to the dev server so they appear in the
-   * browser error overlay.
-   * @default true
-   */
   devServer?: boolean
 }
 
 /**
- * Runs [golar](https://golar.dev) — type checking and linting for TypeScript
- * and embedded languages (Vue, Svelte, Astro, Ember) — in a separate process,
- * and reports what it finds as Rspack errors and warnings.
+ * Runs [golar](https://golar.dev), which type checks and lints TypeScript and
+ * embedded languages such as Vue, Svelte and Astro, in a separate process, and
+ * reports what it finds as Rspack errors and warnings.
  */
 export class GolarRspackPlugin {
   private readonly options: GolarRspackPluginOptions
 
+  /**
+   * @param options Plugin options. See the package README for the defaults.
+   */
   constructor(options: GolarRspackPluginOptions = {}) {
     this.options = options
   }
 
+  /**
+   * Registers the plugin on a compiler. Called by Rspack.
+   *
+   * @param compiler The compiler to attach to.
+   */
   apply(compiler: Compiler): void {
     const state = createPluginState()
     const logger = compiler.getInfrastructureLogger(PLUGIN_NAME)
@@ -49,8 +52,13 @@ export class GolarRspackPlugin {
 
   /**
    * Records the dev server's `done` tap so async results can be replayed into
-   * the overlay. Installed in `apply` so the interceptor is in place before the
-   * dev server registers its own tap.
+   * the browser overlay.
+   *
+   * Installed from `apply` so the interceptor is in place before the dev server
+   * registers its own tap.
+   *
+   * @param compiler The compiler being set up.
+   * @param state State to store the captured tap on.
    */
   private interceptDevServerTap(compiler: Compiler, state: GolarPluginState) {
     if (this.options.devServer === false)
@@ -66,13 +74,19 @@ export class GolarRspackPlugin {
   }
 
   /**
-   * `async` defaults differ between build and watch, so options are resolved on
-   * the first run — that is the earliest point where the mode is known.
+   * Resolves options and installs the reporting hooks on the first run.
+   *
+   * This is deferred because the default for `async` depends on whether this is
+   * a build or a watch, which is not known when `apply` runs.
+   *
+   * @param compiler The compiler being set up.
+   * @param state State to mark as initialized.
    */
   private tapInitialization(compiler: Compiler, state: GolarPluginState) {
     const initialize = (watching: boolean) => {
       if (state.initialized)
         return
+
       state.initialized = true
       state.watching = watching
       state.options = resolveGolarOptions(this.options, {
@@ -90,7 +104,17 @@ export class GolarRspackPlugin {
     compiler.hooks.watchRun.tap(PLUGIN_NAME, () => initialize(true))
   }
 
-  /** Starts a golar run for each compilation, superseding any in-flight run. */
+  /**
+   * Starts a golar run for each compilation, superseding any run still going.
+   *
+   * Runs are chained rather than overlapped, because golar is a whole project
+   * check backed by a native process and concurrency would only contend for
+   * CPU.
+   *
+   * @param compiler The compiler being set up.
+   * @param state State holding the current run and its abort controller.
+   * @param logger Infrastructure logger used for debug output.
+   */
   private tapCompilationToRunGolar(
     compiler: Compiler,
     state: GolarPluginState,
@@ -111,8 +135,6 @@ export class GolarRspackPlugin {
       const abortController = new AbortController()
       state.abortController = abortController
 
-      // Chain rather than overlap: golar is a full-project check backed by a
-      // native process, so two concurrent runs would just contend for CPU.
       state.issuesPromise = (state.issuesPromise ?? Promise.resolve(undefined))
         .catch(() => undefined)
         .then(async () => {
@@ -131,6 +153,7 @@ export class GolarRspackPlugin {
               logger.debug(`golar iteration ${iteration} aborted.`)
               return undefined
             }
+
             // Configuration and resolution failures surface on the compilation.
             compilation.errors.push(error as Error)
             return undefined
@@ -143,7 +166,13 @@ export class GolarRspackPlugin {
     })
   }
 
-  /** Blocking mode: the compilation waits for golar and owns its issues. */
+  /**
+   * Installs blocking reporting, where the compilation waits for golar and owns
+   * the issues it found.
+   *
+   * @param compiler The compiler being set up.
+   * @param state State holding the current run.
+   */
   private tapAfterCompileToReport(compiler: Compiler, state: GolarPluginState) {
     compiler.hooks.afterCompile.tapPromise(PLUGIN_NAME, async (compilation) => {
       if (compilation.compiler !== compiler || !state.options)
@@ -158,9 +187,14 @@ export class GolarRspackPlugin {
   }
 
   /**
-   * Async mode: the build is never held up. Issues are logged when they arrive
-   * and, if a dev server is listening, replayed into its `done` tap so the
-   * browser overlay updates.
+   * Installs async reporting, where the build is never held up.
+   *
+   * Issues are logged when they arrive and, if a dev server is listening, its
+   * `done` tap is replayed with the issues attached. That re-sends the stats
+   * over the HMR socket, which is what makes the browser overlay show them.
+   *
+   * @param compiler The compiler being set up.
+   * @param state State holding the current run and the captured dev server tap.
    */
   private tapDoneToReportAsync(compiler: Compiler, state: GolarPluginState) {
     const logger = compiler.getInfrastructureLogger(PLUGIN_NAME)
@@ -174,6 +208,7 @@ export class GolarRspackPlugin {
 
       void (async () => {
         let issues: Issue[] | undefined
+
         try {
           issues = await issuesPromise
         }
@@ -181,7 +216,7 @@ export class GolarRspackPlugin {
           return
         }
 
-        // A newer build already started; its result is the one that counts.
+        // A newer build already started, so its result is the one that counts.
         if (!issues || state.issuesPromise !== issuesPromise)
           return
 
@@ -194,15 +229,9 @@ export class GolarRspackPlugin {
 
         logger.error(formatIssueSummary(prepared))
 
-        for (const issue of prepared) {
-          logger.error(formatIssue(issue, {
-            cwd: options.cwd,
-            formatter: options.formatter,
-          }))
-        }
+        for (const issue of prepared)
+          logger.error(formatIssue(issue, { cwd: options.cwd, formatter: options.formatter }))
 
-        // Replaying the dev server's tap re-sends the stats over the HMR
-        // socket, which is what makes the browser overlay pick these up.
         if (state.devServerDoneTap) {
           pushIssues(stats.compilation, prepared, options)
           state.devServerDoneTap.fn(stats)
@@ -211,6 +240,12 @@ export class GolarRspackPlugin {
     })
   }
 
+  /**
+   * Aborts any run still going when the compiler shuts down.
+   *
+   * @param compiler The compiler being set up.
+   * @param state State holding the abort controller.
+   */
   private tapCloseToAbort(compiler: Compiler, state: GolarPluginState) {
     const abort = () => {
       state.abortController?.abort()

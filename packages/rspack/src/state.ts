@@ -10,15 +10,17 @@ export interface GolarPluginState {
   initialized: boolean
   watching: boolean
   options?: ResolvedGolarOptions
-  /** Resolves to the issues of the most recently started run. */
   issuesPromise?: Promise<Issue[] | undefined>
-  /** Cancels the in-flight run when a new build supersedes it. */
   abortController?: AbortController
-  /** The dev server's own `done` tap, replayed to refresh the error overlay. */
   devServerDoneTap?: DoneTap
   iteration: number
 }
 
+/**
+ * Creates the mutable state a single compiler instance needs.
+ *
+ * @returns Fresh state, with no run started and nothing initialized.
+ */
 export function createPluginState(): GolarPluginState {
   return { initialized: false, watching: false, iteration: 0 }
 }

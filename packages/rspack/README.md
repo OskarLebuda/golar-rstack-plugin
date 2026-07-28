@@ -18,7 +18,7 @@ pnpm add -D @golar-rstack/rspack golar
 
 ## Usage
 
-Create `golar.config.ts` in your project root — golar discovers it relative to
+Create `golar.config.ts` in your project root. golar discovers it relative to
 its working directory:
 
 ```ts

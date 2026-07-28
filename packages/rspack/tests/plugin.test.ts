@@ -58,7 +58,7 @@ describe('golarRspackPlugin', () => {
     const replays = new Promise<void>((resolve) => {
       compiler.hooks.done.tap('rsbuild-dev-server', (stats) => {
         // Called once by the build itself, then again by the plugin once
-        // golar finishes — only the replay carries golar's issues.
+        // golar finishes. Only the replay carries golar's issues.
         if (golarMessages(stats.compilation.errors)) {
           replayed = stats
           resolve()
