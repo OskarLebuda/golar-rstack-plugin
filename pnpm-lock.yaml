@@ -49,6 +49,28 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/rsbuild:
+    dependencies:
+      '@golar-rstack/rspack':
+        specifier: workspace:*
+        version: link:../rspack
+      golar:
+        specifier: '>=0.1.0'
+        version: 0.1.10
+    devDependencies:
+      '@rsbuild/core':
+        specifier: ^2.1.7
+        version: 2.1.8
+      '@rslib/core':
+        specifier: ^0.23.2
+        version: 0.23.2(@microsoft/api-extractor@7.58.12(@types/node@24.13.3))(typescript@6.0.3)
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/rspack:
     dependencies:
       '@golar-rstack/core':

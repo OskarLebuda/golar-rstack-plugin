@@ -1,0 +1,59 @@
+{
+  "name": "@golar-rstack/rsbuild",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Run golar type checking and linting in a separate process as an Rsbuild plugin",
+  "license": "MIT",
+  "author": "Oskar Lebuda",
+  "keywords": [
+    "golar",
+    "rsbuild",
+    "rsbuild-plugin",
+    "typecheck",
+    "typescript",
+    "vue",
+    "svelte",
+    "astro",
+    "rstack"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch",
+    "check:publish": "publint && attw --pack ."
+  },
+  "dependencies": {
+    "@golar-rstack/rspack": "workspace:*"
+  },
+  "peerDependencies": {
+    "@rsbuild/core": "^1.0.0 || ^2.0.0",
+    "golar": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "golar": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^2.1.7",
+    "@rslib/core": "^0.23.2",
+    "@types/node": "^24.13.3",
+    "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
