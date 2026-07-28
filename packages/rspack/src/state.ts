@@ -3,7 +3,7 @@ import type { Issue, ResolvedGolarOptions } from '@golar-rstack/core'
 export interface DoneTap {
   name: string
   type: string
-  fn: (...args: any[]) => void
+  fn: (...args: unknown[]) => void
 }
 
 export interface GolarPluginState {

@@ -8,7 +8,7 @@ import {
   runGolar,
 } from '@golar-rstack/core'
 import { prepareIssues, pushIssues } from './report.js'
-import type { GolarPluginState } from './state.js'
+import type { DoneTap, GolarPluginState } from './state.js'
 import { createPluginState } from './state.js'
 
 const PLUGIN_NAME = 'GolarRspackPlugin'
@@ -65,9 +65,10 @@ export class GolarRspackPlugin {
       return
 
     compiler.hooks.done.intercept({
-      register: (tap: any) => {
-        if (DEV_SERVER_TAPS.includes(tap.name) && tap.type === 'sync')
-          state.devServerDoneTap = tap
+      register: (tap) => {
+        const candidate = tap as unknown as DoneTap
+        if (DEV_SERVER_TAPS.includes(candidate.name) && candidate.type === 'sync')
+          state.devServerDoneTap = candidate
         return tap
       },
     })

@@ -1,24 +1,32 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { Configuration, Stats } from '@rspack/core'
 import { rspack } from '@rspack/core'
 import { describe, expect, it } from '@rstest/core'
 import { GolarRspackPlugin } from '../src/index.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
-/** A real golar project: golar.config.ts, a Vue SFC type error, a lint error. */
+// A real golar project: golar.config.ts, a Vue SFC type error, a lint error.
 const fixture = path.resolve(dirname, '../../../playground/rsbuild-vue')
 
 function createCompiler() {
-  return rspack({
+  const config: Configuration = {
     context: fixture,
     mode: 'development',
     entry: path.join(dirname, 'fixture/entry.js'),
     output: { path: path.join(dirname, '__out__') },
     infrastructureLogging: { level: 'error' },
-  } as any)
+  }
+
+  return rspack(config)
 }
 
-/** Only the diagnostics this plugin contributed, ignoring Rspack's own. */
+/**
+ * Extracts only the diagnostics this plugin contributed.
+ *
+ * @param diagnostics A compilation's `errors` or `warnings`.
+ * @returns The messages of the golar issues, joined by newlines.
+ */
 function golarMessages(diagnostics: unknown[]): string {
   return diagnostics
     .filter((d): d is Error => d instanceof Error && d.name === 'GolarIssueError')
@@ -32,8 +40,13 @@ describe('golarRspackPlugin', () => {
     const compiler = createCompiler()
     plugin.apply(compiler)
 
-    const stats = await new Promise<any>((resolve, reject) => {
-      compiler.run((error, result) => (error ? reject(error) : resolve(result)))
+    const stats = await new Promise<Stats>((resolve, reject) => {
+      compiler.run((error, result) => {
+        if (error || !result)
+          reject(error ?? new Error('no stats'))
+        else
+          resolve(result)
+      })
     })
 
     const errors = golarMessages(stats.compilation.errors)
@@ -41,10 +54,9 @@ describe('golarRspackPlugin', () => {
     expect(errors).toContain('App.vue')
 
     // Lint issues stay warnings by default: golar itself exits 0 for them.
-    const warnings = golarMessages(stats.compilation.warnings)
-    expect(warnings).toContain('explicit-anys')
+    expect(golarMessages(stats.compilation.warnings)).toContain('explicit-anys')
 
-    await new Promise(resolve => compiler.close(resolve))
+    await new Promise<void>(resolve => compiler.close(() => resolve()))
   })
 
   it('replays the dev-server done tap so the overlay receives issues', async () => {
@@ -54,7 +66,7 @@ describe('golarRspackPlugin', () => {
 
     // Stand in for rsbuild's own tap, which is what the browser overlay
     // listens to. Registered after apply() so the interceptor records it.
-    let replayed: any
+    let replayed: Stats | undefined
     const replays = new Promise<void>((resolve) => {
       compiler.hooks.done.tap('rsbuild-dev-server', (stats) => {
         // Called once by the build itself, then again by the plugin once
@@ -69,10 +81,11 @@ describe('golarRspackPlugin', () => {
     const watching = compiler.watch({}, () => {})
     await replays
 
-    expect(golarMessages(replayed.compilation.errors)).toContain('TS2322')
-    expect(golarMessages(replayed.compilation.errors)).toContain('App.vue')
+    const errors = golarMessages(replayed!.compilation.errors)
+    expect(errors).toContain('TS2322')
+    expect(errors).toContain('App.vue')
 
-    await new Promise(resolve => watching.close(resolve))
+    await new Promise<void>(resolve => watching.close(() => resolve()))
   })
 
   it('does not block the build in async mode', async () => {
@@ -80,7 +93,7 @@ describe('golarRspackPlugin', () => {
     const compiler = createCompiler()
     plugin.apply(compiler)
 
-    let stats: any
+    let stats: Stats | undefined
     const built = new Promise<void>((resolve) => {
       compiler.hooks.done.tap('test-observer', (result) => {
         stats ??= result
@@ -92,8 +105,8 @@ describe('golarRspackPlugin', () => {
     await built
 
     // The compilation completed carrying none of golar's issues.
-    expect(golarMessages(stats.compilation.errors)).toBe('')
+    expect(golarMessages(stats!.compilation.errors)).toBe('')
 
-    await new Promise(resolve => watching.close(resolve))
+    await new Promise<void>(resolve => watching.close(() => resolve()))
   })
 })

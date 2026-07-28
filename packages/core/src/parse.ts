@@ -1,6 +1,8 @@
 import path from 'node:path'
 import type { Issue, IssueSeverity } from './issue.js'
 
+// Matching the escape character is the whole point of stripping ANSI codes.
+// eslint-disable-next-line no-control-regex
 const ANSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g
 
 // Typecheck diagnostics use the plain (non `--pretty`) tsc layout:
