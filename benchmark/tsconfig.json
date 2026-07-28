@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "rootDir": ".",
+    // The scripts run straight through Node's type stripping, which resolves
+    // the specifiers as written, so the imports carry their real extension.
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src"]
+}

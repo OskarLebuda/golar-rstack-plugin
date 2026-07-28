@@ -1,0 +1,26 @@
+{
+  "name": "golar-benchmark",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Compares @golar-rstack/rspack against ts-checker-rspack-plugin on generated Vue projects",
+  "scripts": {
+    "bench": "node --experimental-strip-types src/main.ts",
+    "bench:quick": "node --experimental-strip-types src/main.ts --sizes 100 --runs 3"
+  },
+  "devDependencies": {
+    "@esctn/vue-tsc-api": "^1.0.1",
+    "@golar-rstack/rspack": "workspace:*",
+    "@golar/vue": "^0.1.10",
+    "@rspack/core": "^2.1.6",
+    "@types/node": "^24.13.3",
+    "golar": "^0.1.10",
+    "ts-checker-rspack-plugin": "^1.6.0",
+    "typescript": "~5.9.3",
+    "vue": "^3.5.13",
+    "vue-tsc": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
