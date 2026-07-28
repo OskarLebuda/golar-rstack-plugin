@@ -23,6 +23,15 @@ jobs:
       - run: pnpm build
       # Lint and type check in one pass.
       - run: pnpm lint
+      # golar's unfiltered view of the fixture, including the file list it
+      # resolved for type checking. Logged before the tests so a failure below
+      # can be compared against what golar reports on the runner itself.
+      - name: Run golar on the playground fixture
+        run: pnpm --filter playground-rsbuild-vue run check
+        continue-on-error: true
+        env:
+          DEBUG: 'golar:*'
+
       # Spawns the real golar binary against the playground, so this also
       # covers the diagnostic parsing end to end.
       - run: pnpm test

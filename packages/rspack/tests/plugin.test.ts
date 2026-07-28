@@ -2,6 +2,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Configuration, Stats } from '@rspack/core'
 import { rspack } from '@rspack/core'
+import { resolveGolarOptions, runGolar } from '@golar-rstack/core'
 import { describe, expect, it } from '@rstest/core'
 import { GolarRspackPlugin } from '../src/index.js'
 
@@ -44,6 +45,43 @@ function describeDiagnostics(diagnostics: unknown[]): string {
     .join('\n--\n')
 }
 
+/**
+ * Runs golar on the fixture directly, with its config debug output turned on.
+ *
+ * The plugin keeps golar's raw output to itself, so a compilation that carries
+ * no type error cannot say whether golar reported none or the plugin dropped
+ * them. This runs in the same process as the test, so it reports what golar
+ * sees on the machine the test is failing on, including the file list it
+ * resolved for type checking.
+ *
+ * @returns golar's exit code and raw output.
+ */
+async function probeGolar(): Promise<string> {
+  const options = resolveGolarOptions(
+    { cwd: fixture, env: { DEBUG: 'golar:*' } },
+    { cwd: fixture, watch: false },
+  )
+  const result = await runGolar(options)
+
+  return `golar probe:\nexitCode: ${result.exitCode}\nraw output:\n${result.output}`
+}
+
+/**
+ * Appends golar's own view of the fixture to a report that came out wrong.
+ *
+ * Only runs when the report is already going to fail an assertion, so passing
+ * runs are not charged a second golar start.
+ *
+ * @param report The report built from a compilation.
+ * @returns The report, with the probe appended when the type error is missing.
+ */
+async function explain(report: string): Promise<string> {
+  if (report.includes('TS2322'))
+    return report
+
+  return `${report}\n\n${await probeGolar()}`
+}
+
 describe('golarRspackPlugin', () => {
   it('fails a build with the type error golar found inside the SFC', async () => {
     const plugin = new GolarRspackPlugin({ cwd: fixture, async: false })
@@ -59,10 +97,10 @@ describe('golarRspackPlugin', () => {
       })
     })
 
-    const report = [
+    const report = await explain([
       `errors:\n${describeDiagnostics(stats.compilation.errors)}`,
       `warnings:\n${describeDiagnostics(stats.compilation.warnings)}`,
-    ].join('\n\n')
+    ].join('\n\n'))
 
     expect(report).toContain('TS2322')
     expect(report).toContain('App.vue')
@@ -103,9 +141,9 @@ describe('golarRspackPlugin', () => {
 
     // On a stall this reports every tap invocation, so the failure says what
     // the dev server actually received instead of just timing out.
-    const report = replayed
+    const report = await explain(replayed
       ? describeDiagnostics(replayed.compilation.errors)
-      : `tap never received errors. Invocations:\n${seen.join('\n==\n') || '(never called)'}`
+      : `tap never received errors. Invocations:\n${seen.join('\n==\n') || '(never called)'}`)
 
     expect(report).toContain('TS2322')
     expect(report).toContain('App.vue')
