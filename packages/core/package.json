@@ -1,0 +1,51 @@
+{
+  "name": "@golar-rstack/core",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Shared golar runner and diagnostic parsing for the Rstack golar plugins",
+  "license": "MIT",
+  "author": "Oskar Lebuda",
+  "keywords": [
+    "golar",
+    "typecheck",
+    "typescript",
+    "rstack"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch",
+    "test": "rstest run",
+    "check:publish": "publint && attw --pack ."
+  },
+  "peerDependencies": {
+    "golar": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "golar": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@rslib/core": "^0.23.2",
+    "@rstest/core": "^0.11.2",
+    "@types/node": "^24.13.3",
+    "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
