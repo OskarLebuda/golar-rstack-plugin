@@ -5,6 +5,15 @@
   "description": "Run golar type checking and linting in a separate process as an Rspack plugin",
   "license": "MIT",
   "author": "Oskar Lebuda",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OskarLebuda/golar-rstack.git",
+    "directory": "packages/rspack"
+  },
+  "bugs": {
+    "url": "https://github.com/OskarLebuda/golar-rstack/issues"
+  },
+  "homepage": "https://github.com/OskarLebuda/golar-rstack#readme",
   "keywords": [
     "golar",
     "rspack",

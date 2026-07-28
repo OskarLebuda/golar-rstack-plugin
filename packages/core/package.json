@@ -5,6 +5,15 @@
   "description": "Shared golar runner and diagnostic parsing for the Rstack golar plugins",
   "license": "MIT",
   "author": "Oskar Lebuda",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OskarLebuda/golar-rstack.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/OskarLebuda/golar-rstack/issues"
+  },
+  "homepage": "https://github.com/OskarLebuda/golar-rstack#readme",
   "keywords": [
     "golar",
     "typecheck",
