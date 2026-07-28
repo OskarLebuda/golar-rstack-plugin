@@ -1,7 +1,7 @@
 {
   "name": "@golar-rstack/core",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shared golar runner and diagnostic parsing for the Rstack golar plugins",
   "license": "MIT",
   "author": "Oskar Lebuda",

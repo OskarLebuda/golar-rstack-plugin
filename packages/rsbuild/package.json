@@ -1,7 +1,7 @@
 {
   "name": "@golar-rstack/rsbuild",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run golar type checking and linting in a separate process as an Rsbuild plugin",
   "license": "MIT",
   "author": "Oskar Lebuda",
