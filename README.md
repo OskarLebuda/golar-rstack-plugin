@@ -1,8 +1,8 @@
 # golar-rstack-plugin
 
-Run [golar](https://golar.dev) — native-speed type checking and type-aware
-linting built on `typescript-go` — as part of your Rspack or Rsbuild build,
-in a separate process.
+Run [golar](https://golar.dev), which provides native-speed type checking and
+type-aware linting built on `typescript-go`, as part of your Rspack or Rsbuild
+build, in a separate process.
 
 This is to golar what `ts-checker-rspack-plugin` / `fork-ts-checker-webpack-plugin`
 are to `tsc`. The difference is what golar can check: it understands **embedded
@@ -75,7 +75,7 @@ File: src/App.vue:8:7
 arrive in the terminal shortly after the build, and are pushed into the browser
 error overlay.
 
-Each build supersedes the previous check — an in-flight golar run is killed when
+Each build supersedes the previous check. An in-flight golar run is killed when
 a new compilation starts, so a fast edit loop never queues up stale results.
 
 ## Options
@@ -111,9 +111,9 @@ that golar considers passing. Set it to `'error'` if you want them to block.
 
 ### `cwd`
 
-golar has no `--config` flag — it discovers `golar.config.*` relative to its
+golar has no `--config` flag. It discovers `golar.config.*` relative to its
 working directory, so this option is how the config gets selected. It defaults
-to the Rsbuild root / Rspack context.
+to the Rsbuild root or the Rspack context.
 
 ## Requirements
 
