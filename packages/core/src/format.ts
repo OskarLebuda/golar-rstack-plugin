@@ -4,12 +4,25 @@ import type { Issue } from './issue.js'
 
 const CONTEXT_LINES = 2
 
+export interface FormatOptions {
+  cwd: string
+  formatter: 'basic' | 'codeframe'
+}
+
 /**
- * Renders a small excerpt of the source around the issue with a caret under the
- * offending column. Hand-rolled so the package stays dependency-free.
+ * Renders an excerpt of a source file with a caret under the offending column.
+ *
+ * Hand rolled so the package stays free of runtime dependencies.
+ *
+ * @param file Absolute path of the file to read.
+ * @param line One based line number to point at.
+ * @param column One based column number to point at.
+ * @returns The rendered frame, or `undefined` if the file cannot be read or the
+ * line is out of range.
  */
 function renderCodeFrame(file: string, line: number, column: number): string | undefined {
   let source: string
+
   try {
     source = fs.readFileSync(file, 'utf8')
   }
@@ -40,13 +53,15 @@ function renderCodeFrame(file: string, line: number, column: number): string | u
   return frame.join('\n')
 }
 
-export interface FormatOptions {
-  /** Paths are printed relative to this directory. */
-  cwd: string
-  formatter: 'basic' | 'codeframe'
-}
-
-/** Human-readable rendering of a single issue. */
+/**
+ * Renders a single issue for display.
+ *
+ * @param issue The issue to render.
+ * @param options Directory to make paths relative to, and which formatter to
+ * use. The `codeframe` formatter appends a source excerpt when the file can be
+ * read.
+ * @returns The formatted text, without a trailing newline.
+ */
 export function formatIssue(issue: Issue, options: FormatOptions): string {
   const parts: string[] = []
   const origin = issue.origin === 'lint' ? 'lint' : 'type'
@@ -70,7 +85,13 @@ export function formatIssue(issue: Issue, options: FormatOptions): string {
   return result
 }
 
-/** Summary line such as `Found 2 errors and 1 warning.` */
+/**
+ * Builds a one line summary of a set of issues.
+ *
+ * @param issues The issues to count.
+ * @returns Text such as `Found 2 errors and 1 warning.`, or a note that nothing
+ * was found.
+ */
 export function formatIssueSummary(issues: Issue[]): string {
   const errors = issues.filter(issue => issue.severity === 'error').length
   const warnings = issues.length - errors

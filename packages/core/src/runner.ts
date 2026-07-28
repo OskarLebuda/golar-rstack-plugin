@@ -17,17 +17,20 @@ export class GolarAbortError extends Error {
 
 export interface GolarRunResult {
   issues: Issue[]
-  /** Raw combined output, kept for diagnostics when the CLI misbehaves. */
   output: string
   exitCode: number | null
   aborted: boolean
 }
 
 /**
- * Locates golar's entrypoint by walking up from `cwd`.
+ * Locates golar's entrypoint by walking up the directory tree.
  *
- * `require.resolve('golar/package.json')` is not an option: golar's exports map
- * only exposes `./unstable` and `./unstable-tsgo`.
+ * `require.resolve('golar/package.json')` is not an option, because golar's
+ * exports map only exposes `./unstable` and `./unstable-tsgo`.
+ *
+ * @param cwd The directory to start searching from.
+ * @returns The path of `golar/dist/bin.js`, or `undefined` if golar is not
+ * installed anywhere above `cwd`.
  */
 export function resolveGolarBin(cwd: string): string | undefined {
   let dir = path.resolve(cwd)
@@ -44,9 +47,16 @@ export function resolveGolarBin(cwd: string): string | undefined {
   }
 }
 
+/**
+ * Works out how to launch golar.
+ *
+ * @param options Resolved options, whose `bin` field overrides the lookup.
+ * @returns The command to run and the arguments that select the entrypoint.
+ * @throws If golar cannot be found and no `bin` was given.
+ */
 function createCommand(options: ResolvedGolarOptions): { command: string, args: string[] } {
   if (options.bin) {
-    // An explicit .js entrypoint still needs a node host; anything else is
+    // An explicit .js entrypoint still needs a node host. Anything else is
     // assumed to be directly executable.
     return options.bin.endsWith('.js')
       ? { command: process.execPath, args: [options.bin] }
@@ -65,10 +75,19 @@ function createCommand(options: ResolvedGolarOptions): { command: string, args: 
 }
 
 /**
- * Runs golar once and returns the issues it reported.
+ * Runs golar once and collects the issues it reports.
  *
  * golar has no watch mode and no structured reporter, so every check is a fresh
- * process whose stdout gets parsed.
+ * process whose output gets parsed. A non-zero exit that yields no issues means
+ * golar itself failed, and the raw output is reported instead of a clean check.
+ *
+ * @param options Resolved options describing where and how to run golar.
+ * @param signal Aborting this kills the child process, which is how a new build
+ * cancels a check that is still running.
+ * @returns The issues found, along with the raw output and exit code.
+ * @throws {GolarAbortError} If `signal` is aborted before or during the run.
+ * @throws If no golar config exists in the working directory, or golar cannot
+ * be located or spawned.
  */
 export async function runGolar(
   options: ResolvedGolarOptions,
@@ -136,9 +155,6 @@ export async function runGolar(
           lintSeverity: options.lintSeverity,
         })))
 
-        // A non-zero exit with nothing parsed means golar itself failed (bad
-        // config, missing native addon, crash). Surface the output rather than
-        // silently reporting a clean check.
         if (exitCode !== 0 && issues.length === 0) {
           issues.push(createInternalIssue(
             `golar exited with code ${exitCode}.\n${stripAnsi(output).trim()}`,

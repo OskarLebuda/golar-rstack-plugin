@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { IssueSeverity } from './issue.js'
 
-/** Which golar subcommand to run. */
 export type GolarMode = 'all' | 'typecheck' | 'lint'
 
 export type IssueFilter = (issue: {
@@ -13,52 +12,16 @@ export type IssueFilter = (issue: {
 }) => boolean
 
 export interface GolarOptions {
-  /**
-   * Directory golar runs in. golar has no `--config` flag — it discovers
-   * `golar.config.*` relative to its working directory, so this is how the
-   * config is selected. Defaults to the compiler context.
-   */
   cwd?: string
-  /**
-   * `all` runs lint + typecheck (golar's default and recommended mode),
-   * `typecheck` and `lint` run only that phase.
-   * @default 'all'
-   */
   mode?: GolarMode
-  /**
-   * Report issues without blocking the compilation. Errors arrive after the
-   * build finishes, which keeps HMR fast.
-   * @default true in watch/dev, false otherwise
-   */
   async?: boolean
-  /**
-   * Severity used for typecheck diagnostics.
-   * @default 'error'
-   */
   typecheckSeverity?: IssueSeverity
-  /**
-   * Severity used for lint diagnostics. Defaults to `warning` because golar
-   * itself exits 0 when only lint rules fire.
-   * @default 'warning'
-   */
   lintSeverity?: IssueSeverity
-  /** Drop issues for which this returns `false`. */
   filter?: IssueFilter
-  /**
-   * How issues are rendered.
-   * @default 'codeframe'
-   */
   formatter?: 'basic' | 'codeframe'
-  /** Path to the golar executable. Resolved from `cwd` when omitted. */
   bin?: string
-  /** Extra arguments appended to the golar invocation. */
   args?: string[]
-  /** Environment overrides for the golar process. */
   env?: Record<string, string | undefined>
-  /**
-   * Fail the build when issues are found.
-   * @default true
-   */
   failOnError?: boolean
 }
 
@@ -85,16 +48,35 @@ const CONFIG_FILENAMES = [
   'golar.config.js',
 ]
 
-/** Mirrors the CLI's own discovery order. */
+/**
+ * Looks for a golar config file, mirroring the CLI's own discovery order.
+ *
+ * @param cwd The directory golar will run in.
+ * @returns The path of the first config found, or `undefined` if there is none.
+ */
 export function findGolarConfig(cwd: string): string | undefined {
   for (const name of CONFIG_FILENAMES) {
     const candidate = path.join(cwd, name)
     if (fs.existsSync(candidate))
       return candidate
   }
+
   return undefined
 }
 
+/**
+ * Fills in the defaults for a set of user supplied options.
+ *
+ * Checking asynchronously is the default while watching, so a rebuild is never
+ * held up, and off otherwise, so a one-off build fails on type errors. Lint
+ * findings default to `warning` because golar exits 0 when only lint rules
+ * fire, and reporting them as errors would fail builds golar considers clean.
+ *
+ * @param options The options given by the user.
+ * @param context The working directory to fall back to, and whether this run is
+ * a watch rather than a one-off build.
+ * @returns Options with every field resolved.
+ */
 export function resolveGolarOptions(
   options: GolarOptions,
   context: { cwd: string, watch: boolean },
@@ -114,7 +96,15 @@ export function resolveGolarOptions(
   }
 }
 
-/** golar's subcommand for a mode — `all` is the bare invocation. */
+/**
+ * Builds the argument list for a golar invocation.
+ *
+ * The `all` mode is the bare command, which is what golar recommends, so it
+ * contributes no subcommand.
+ *
+ * @param options Resolved options carrying the mode and any extra arguments.
+ * @returns The arguments to pass to the golar executable.
+ */
 export function getGolarArgs(options: ResolvedGolarOptions): string[] {
   const subcommand = options.mode === 'all' ? [] : [options.mode]
   return [...subcommand, ...options.args]

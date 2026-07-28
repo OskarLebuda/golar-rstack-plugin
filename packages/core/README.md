@@ -18,7 +18,7 @@ lint        src/math.ts:6:33: explicit-anys: Unexpected any. Specify a different
 ```
 
 Indented lines elaborate on the diagnostic above them and are folded into its
-message. This is not a stable API — the parser is covered by tests pinned to the
+message. This is not a stable API. The parser is covered by tests pinned to the
 formats emitted by golar 0.1.10.
 
 ## Usage
