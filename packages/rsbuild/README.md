@@ -42,7 +42,7 @@ golar, so type errors fail the build.
 
 ## Options
 
-See the [repository README](https://github.com/OskarLebuda/golar-rstack#options)
+See the [repository README](https://github.com/OskarLebuda/golar-rstack-plugin#options)
 for the full list. Two worth knowing up front:
 
 - `lintSeverity` defaults to `'warning'`, because golar exits 0 when only lint

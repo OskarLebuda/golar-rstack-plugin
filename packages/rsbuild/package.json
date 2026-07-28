@@ -7,13 +7,13 @@
   "author": "Oskar Lebuda",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OskarLebuda/golar-rstack.git",
+    "url": "git+https://github.com/OskarLebuda/golar-rstack-plugin.git",
     "directory": "packages/rsbuild"
   },
   "bugs": {
-    "url": "https://github.com/OskarLebuda/golar-rstack/issues"
+    "url": "https://github.com/OskarLebuda/golar-rstack-plugin/issues"
   },
-  "homepage": "https://github.com/OskarLebuda/golar-rstack#readme",
+  "homepage": "https://github.com/OskarLebuda/golar-rstack-plugin#readme",
   "keywords": [
     "golar",
     "rsbuild",
